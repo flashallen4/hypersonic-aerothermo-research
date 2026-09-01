@@ -116,6 +116,33 @@ Sweep cases with different R_n will need this recomputed, since stagnation-regio
 BL thickness scales with local geometry — this will be automated once the
 baseline mesh/solver setup is verified.
 
+**Shock-layer refinement zone (Option C — broad bounded region, no a priori shock-location guess):**
+
+A moderately fine, broadly bounded refinement zone is applied around the body
+(Gmsh `Box` field) rather than either (a) a narrow box hand-placed at a
+predicted shock location, or (b) solution-adaptive mesh refinement (AMR).
+This avoids the risk of under-resolving a shock that lands outside a
+narrowly-guessed region, while remaining simpler and fully reproducible
+from the `.geo` file alone, without a solve-refine iteration loop. AMR is
+left as a possible future upgrade if mesh-convergence verification shows
+this is insufficient.
+
+All parameters are expressed in terms of R_n, L, R_b so this structure
+generalizes across the nose-radius sweep without modification.
+
+| Parameter | Formula | Baseline value |
+|---|---|---|
+| Zone upstream edge | −3 × R_n | −0.15 m |
+| Zone downstream edge | L (full body length) | 0.4166 m |
+| Zone radial extent | R_b + 4 × R_n | 0.35 m |
+| Refined cell size | R_n / 12 | ≈4.17 mm |
+| Transition (blend) thickness | 2 × R_n | 0.10 m |
+
+Verified (baseline case): 39,067 nodes, 38,893 triangles, 19,237 quads
+(quads concentrated in the boundary-layer region). Visual and quantitative
+checks confirm the boundary-layer field and shock-layer Box field coexist
+correctly without disrupting each other.
+
 ## Solver
 
 - `rhoCentralFoam` (OpenFOAM 11), steady-state operation via appropriate
