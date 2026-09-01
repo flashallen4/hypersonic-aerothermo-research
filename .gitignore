@@ -1,0 +1,46 @@
+# OpenFOAM run artifacts
+*/processor*/
+*/postProcessing/
+*/*.foam
+*/log.*
+*/constant/polyMesh/[0-9]*
+*/0.orig/
+*/dynamicCode/
+
+# CalculiX
+*.frd
+*.dat
+*.sta
+*.cvg
+*.12d
+*.eig
+*.mtx
+*.rin
+*.rout
+
+# Gmsh
+*.msh~
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*~
+
+# Large binary results (kept out of git; regenerate via scripts)
+*.vtu
+*.vtk
+*.vtp
+*.pvtu
+*.stl
+*.step
+*.stp
