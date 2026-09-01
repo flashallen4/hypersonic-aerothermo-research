@@ -72,15 +72,49 @@ study with θ_c and R_b held fixed for all cases.
 
 - Fixed isothermal wall temperature: T_w = 300 K
 
-## Domain and Boundary Conditions (to be finalized at meshing stage)
+## Domain, Mesh Sizing, and Boundary Conditions
 
-- 2D-axisymmetric wedge domain (OpenFOAM axisymmetric wedge convention)
+- 2D-axisymmetric wedge domain (OpenFOAM axisymmetric wedge convention,
+  wedge half-angle ~2-5 deg)
 - Farfield/inlet: freestream supersonic inflow (fixed M∞, T∞, p∞)
 - Outlet: supersonic outflow (zero-gradient, since flow is supersonic)
 - Body surface: no-slip, fixed-temperature wall (300 K)
 - Axis: axisymmetric wedge boundary condition
-- Domain extents and farfield distance to be set to avoid boundary influence on
-  bow shock — confirmed via a domain-independence check.
+
+**Domain extents (baseline case, R_n = 0.05 m):**
+
+| Boundary | Distance | Rationale |
+|---|---|---|
+| Upstream farfield | 6 × R_n = 0.30 m ahead of nose | Comfortable margin ahead of bow shock stand-off |
+| Outer radial farfield | 15 × R_n = 0.75 m from axis | Avoid confinement of shock layer / outer flow |
+| Downstream extent | 2 × L past base (~3 × L total) | Allow wake/expansion to develop away from outlet |
+
+To be confirmed via a domain-independence check (part of verification stage):
+if results change meaningfully when farfield boundaries are pushed further out,
+the domain will be enlarged.
+
+**Near-wall mesh sizing (baseline case):**
+
+Computed via `scripts/mesh/boundary_layer_estimate.py`, using Sutherland's law
+for viscosity and the Eckert reference-temperature method for compressible
+laminar boundary-layer thickness estimation (a standard first-order sizing
+approximation — NOT used as a validation or physics result; the CFD solution
+itself is what will be trusted for actual boundary-layer physics).
+
+| Quantity | Value |
+|---|---|
+| Adiabatic wall temperature (recovery) | 2113.24 K |
+| Eckert reference temperature | 678.33 K |
+| Estimated BL thickness near stagnation (thinnest region) | 0.561 mm |
+| Estimated BL thickness near base (thickest region) | 5.015 mm |
+| Recommended first-cell wall-normal height | 5.61 μm (5.607×10⁻⁶ m) |
+| Wall-normal geometric growth ratio | 1.12 |
+| Cells spanning thinnest BL region | ~23 |
+
+This first-cell height and growth ratio apply to the baseline case (R_n = 0.05 m).
+Sweep cases with different R_n will need this recomputed, since stagnation-region
+BL thickness scales with local geometry — this will be automated once the
+baseline mesh/solver setup is verified.
 
 ## Solver
 
