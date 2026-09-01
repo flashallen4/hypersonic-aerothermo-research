@@ -51,10 +51,15 @@ Cone half-angle (15°) and base radius (0.15 m) held fixed across all sweep case
 
 | R_n (m) | x_t (m) | r_t (m) | L (m) | Notes |
 |---|---|---|---|---|
-| 0.02 | 0.01482 | 0.01932 | 0.4934 | |
-| 0.05 | 0.03706 | 0.04830 | 0.4166 | Baseline |
-| 0.10 | 0.07412 | 0.09659 | 0.2999 | |
-| 0.14 | 0.10377 | 0.13523 | 0.1589 | Bluntest case; short (~5.5 cm) conical afterbody |
+| 0.02 | 0.01482 | 0.01932 | 0.50253 | |
+| 0.05 | 0.03706 | 0.04830 | 0.41662 | Baseline |
+| 0.10 | 0.07412 | 0.09659 | 0.27344 | |
+| 0.14 | 0.10377 | 0.13523 | 0.15889 | Bluntest case; short (~5.5 cm) conical afterbody |
+
+Values in this table are generated and verified by
+`scripts/geometry/blunted_cone_profile.py` (single source of truth for all
+profile geometry). Earlier hand-calculated values for R_n=0.02 and R_n=0.10
+contained arithmetic errors, caught by cross-checking against this script.
 
 **Note on sweep upper bound:** R_n = 0.20 m was initially proposed but found
 geometrically invalid at θ_c = 15°, R_b = 0.15 m — the tangent-point radius
