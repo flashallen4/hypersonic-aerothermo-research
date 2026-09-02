@@ -1,0 +1,87 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM
+   \\    /   O peration     |
+    \\  /    A nd           |
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+        rho
+    {
+        solver          diagonal;
+    }
+    rhoFinal
+    {
+        $rho
+    }
+    rhoU
+    {
+        solver          diagonal;
+    }
+    rhoUFinal
+    {
+        $rhoU
+    }
+    rhoE
+    {
+        solver          diagonal;
+    }
+    rhoEFinal
+    {
+        $rhoE
+    }
+
+    U
+    {
+        solver          smoothSolver;
+        smoother         symGaussSeidel;
+        tolerance        1e-8;
+        relTol           0;
+    }
+    UFinal
+    {
+        $U
+    }
+
+    T
+    {
+        solver          PBiCGStab;
+        preconditioner   DIC;
+        tolerance        1e-8;
+        relTol           0;
+    }
+    TFinal
+    {
+        $T
+    }
+    e
+    {
+        solver          PBiCGStab;
+        preconditioner   DIC;
+        tolerance        1e-8;
+        relTol           0;
+    }
+    eFinal
+    {
+        $e
+    }
+}
+
+PIMPLE
+{
+    nOuterCorrectors    1;
+    nCorrectors         1;
+    nNonOrthogonalCorrectors 0;
+}
+
+// ************************************************************************* //

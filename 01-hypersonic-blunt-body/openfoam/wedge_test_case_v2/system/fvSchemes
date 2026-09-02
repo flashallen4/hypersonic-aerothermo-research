@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM
+   \\    /   O peration     |
+    \\  /    A nd           |
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Standard rhoCentralFoam schemes (shock-capturing, appropriate for M=7)
+
+ddtSchemes
+{
+    default         Euler;
+}
+
+gradSchemes
+{
+    default         Gauss linear;
+}
+
+divSchemes
+{
+    default             none;
+    div(tauMC)          Gauss linear;
+}
+
+interpolationSchemes
+{
+    default         linear;
+    reconstruct(rho)    vanAlbada;
+    reconstruct(U)      vanAlbada;
+    reconstruct(T)      vanAlbada;
+}
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+laplacianSchemes
+{
+    default         Gauss linear corrected;
+}
+
+// ************************************************************************* //
