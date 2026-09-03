@@ -61,13 +61,16 @@ Field[1].ratio = 1.12;
 Field[1].thickness = 0.006;
 Field[1].Quads = 1;
 Field[1].NbLayers = 40;
-Field[1].FanPointsList = {p_nose_tip};
+Field[1].FanPointsList = {p_nose_tip, p_base_outer};
 BoundaryLayer Field = 1;
 
 // --- Field 2: Shock-layer refinement box (Option C) ---
 Field[2] = Box;
 Field[2].XMin = -3 * R_n;
-Field[2].XMax = L;
+Field[2].XMax = L + 0.1 * R_n;  // small margin past the base, so the
+                                  // refinement-zone boundary does not
+                                  // coincide exactly with the sharp
+                                  // wall_cone/wall_base geometric corner
 Field[2].YMin = 0;
 Field[2].YMax = R_b + 4 * R_n;
 Field[2].VIn = lc_shock;
