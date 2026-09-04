@@ -101,3 +101,37 @@ Field[2].Thickness = 2 * R_n;
 Background Field = 2;
 
 Mesh.Algorithm = 6;
+
+
+// ============================================================================
+// STAGE 4b: Axisymmetric wedge extension (validated methodology, see
+// mesh/WEDGE_MESHING_METHODOLOGY.md). Indices recalculated for the 9-curve
+// loop (fillet adds curve 9; curves 1,5 remain axis-touching, no swept
+// surface).
+// ============================================================================
+
+half_angle = 1 * Pi/180;
+full_angle = 2 * half_angle;
+
+Rotate { {1,0,0}, {0,0,0}, -half_angle } { Surface{1}; }
+
+out[] = Extrude { {1,0,0}, {0,0,0}, full_angle } {
+  Surface{1}; Layers{1}; Recombine;
+};
+
+Physical Surface("frontWedge") = {1};
+Physical Surface("backWedge")  = {out[0]};
+
+Physical Surface("wall_nose")      = {out[2]};
+Physical Surface("wall_cone")      = {out[3]};
+Physical Surface("wall_fillet")    = {out[4]};
+Physical Surface("wall_base")      = {out[5]};
+Physical Surface("outlet")         = {out[6]};
+Physical Surface("farfield_outer") = {out[7]};
+Physical Surface("farfield_upstream")={out[8]};
+
+Physical Volume("internal") = {out[1]};
+
+Mesh.Optimize = 0;
+Mesh.OptimizeNetgen = 0;
+Mesh.Smoothing = 0;

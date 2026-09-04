@@ -34,25 +34,7 @@ EndFor
 
 p_nose_tip   = nose_pts[0];
 p_tangent    = nose_pts[n_nose];
-// --- Cone/base corner fillet (r_fillet = 3mm, verified in
-//     mesh/fillet_geometry_check.geo) - replaces sharp corner to
-//     eliminate mesh defect found at this location under wedge rotation ---
-r_fillet = 0.003;
-phi = Pi/2 - theta_c;
-t_len = r_fillet / Tan(phi/2);
-d_len = r_fillet / Sin(phi/2);
-bisector_angle = 5*Pi/4 + theta_c/2;
-
-T1_x = L - t_len * Cos(theta_c);
-T1_r = R_b - t_len * Sin(theta_c);
-T2_x = L;
-T2_r = R_b - t_len;
-O_x  = L + d_len * Cos(bisector_angle);
-O_r  = R_b + d_len * Sin(bisector_angle);
-
-p_T1 = newp; Point(p_T1) = {T1_x, T1_r, 0, lc_wall};
-p_T2 = newp; Point(p_T2) = {T2_x, T2_r, 0, lc_wall};
-p_O  = newp; Point(p_O)  = {O_x, O_r, 0, lc_wall};
+p_base_outer = newp; Point(p_base_outer) = {L, R_b, 0, lc_wall};
 p_base_axis  = newp; Point(p_base_axis)  = {L, 0, 0, lc_far};
 p_wake_axis  = newp; Point(p_wake_axis)  = {x_downstream, 0, 0, lc_far};
 p_outlet_top = newp; Point(p_outlet_top) = {x_downstream, r_outer, 0, lc_far};
@@ -61,15 +43,14 @@ p_axis_up    = newp; Point(p_axis_up)    = {x_upstream, 0, 0, lc_far};
 
 Line(1) = {p_axis_up, p_nose_tip};
 Spline(2) = nose_pts[];
-Line(3) = {p_tangent, p_T1};
-Circle(9) = {p_T1, p_O, p_T2};
-Line(4) = {p_T2, p_base_axis};
+Line(3) = {p_tangent, p_base_outer};
+Line(4) = {p_base_outer, p_base_axis};
 Line(5) = {p_base_axis, p_wake_axis};
 Line(6) = {p_wake_axis, p_outlet_top};
 Line(7) = {p_outlet_top, p_farfield_up};
 Line(8) = {p_farfield_up, p_axis_up};
 
-Curve Loop(1) = {1, 2, 3, 9, 4, 5, 6, 7, 8};
+Curve Loop(1) = {1, 2, 3, 4, 5, 6, 7, 8};
 Plane Surface(1) = {1};
 
 // --- Field 1: Boundary Layer (wall-normal growth) ---
@@ -86,10 +67,7 @@ BoundaryLayer Field = 1;
 // --- Field 2: Shock-layer refinement box (Option C) ---
 Field[2] = Box;
 Field[2].XMin = -3 * R_n;
-Field[2].XMax = L + 0.1 * R_n;  // small margin past the base, so the
-                                  // refinement-zone boundary does not
-                                  // coincide exactly with the sharp
-                                  // wall_cone/wall_base geometric corner
+Field[2].XMax = L;
 Field[2].YMin = 0;
 Field[2].YMax = R_b + 4 * R_n;
 Field[2].VIn = lc_shock;
