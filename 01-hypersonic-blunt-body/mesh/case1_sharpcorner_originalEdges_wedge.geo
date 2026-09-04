@@ -55,7 +55,7 @@ Plane Surface(1) = {1};
 
 // --- Field 1: Boundary Layer (wall-normal growth) ---
 Field[1] = BoundaryLayer;
-Field[1].EdgesList = {2, 3, 4};  // EXTENDED - resolves open-cell/misorientation defect, see CORNER_DEFECT_INVESTIGATION.md
+Field[1].EdgesList = {2, 3};
 Field[1].hwall_n = 5.607e-6;
 Field[1].ratio = 1.12;
 Field[1].thickness = 0.006;
@@ -79,3 +79,26 @@ Field[2].Thickness = 2 * R_n;
 Background Field = 2;
 
 Mesh.Algorithm = 6;
+
+// Case 1: sharp corner + ORIGINAL EdgesList {2,3} - the original defective
+// configuration. Preserved for the investigation record; empirically
+// confirmed defective (2 open cells, 1 misoriented face) in this session's
+// initial baseline_case checkMesh run - see CORNER_DEFECT_INVESTIGATION.md.
+half_angle = 1 * Pi/180;
+full_angle = 2 * half_angle;
+Rotate { {1,0,0}, {0,0,0}, -half_angle } { Surface{1}; }
+out[] = Extrude { {1,0,0}, {0,0,0}, full_angle } {
+  Surface{1}; Layers{1}; Recombine;
+};
+Physical Surface("frontWedge") = {1};
+Physical Surface("backWedge")  = {out[0]};
+Physical Surface("wall_nose")      = {out[2]};
+Physical Surface("wall_cone")      = {out[3]};
+Physical Surface("wall_base")      = {out[4]};
+Physical Surface("outlet")         = {out[5]};
+Physical Surface("farfield_outer") = {out[6]};
+Physical Surface("farfield_upstream")={out[7]};
+Physical Volume("internal") = {out[1]};
+Mesh.Optimize = 0;
+Mesh.OptimizeNetgen = 0;
+Mesh.Smoothing = 0;

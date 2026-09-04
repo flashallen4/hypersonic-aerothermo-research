@@ -105,3 +105,60 @@ only (per earlier instruction) and confirmed NOT to prevent the crash -
 this result itself is evidence the defect is a real numerical/topology
 problem, not merely an extreme-but-otherwise-valid state that bounding
 could reasonably contain.
+
+## FINAL: Controlled 2×2 experiment matrix and causal conclusion
+
+| Case | Corner geometry | BoundaryLayer EdgesList | Open cells | Misoriented faces | Result |
+|---|---|---|---|---|---|
+| 1 | Sharp | {2,3} (original) | 2 | 1 | DEFECTIVE (original baseline) |
+| 2 | Filleted (3mm) | {2,3} (original) | 2 | 1 | DEFECTIVE (fillet alone: no effect) |
+| 3 | Filleted (3mm) | {2,3,9,4} (extended) | 0 | 0 | CLEAN |
+| 4 | Sharp | {2,3,4} (extended) | 0 | 0 | CLEAN |
+
+**Causal conclusion:** The evidence strongly supports the BoundaryLayer
+field's `EdgesList` topology transition as the cause of the observed
+open-cell/misoriented-face defect, independent of wall geometry. Comparing
+Case 1→2 (geometry changed, EdgesList unchanged: defect persists
+identically) against Case 2→3 and Case 1→4 (EdgesList changed: defect
+fully eliminated in both sharp and filleted geometries) isolates EdgesList
+as the operative variable. The 3mm fillet is confirmed NOT REQUIRED to
+resolve this specific defect.
+
+**Adopted baseline: Case 4** (original sharp-corner geometry + extended
+EdgesList {2,3,4}) - promoted to `mesh/baseline_mesh_full.geo` and
+`mesh/baseline_mesh_wedge.geo`. This preserves the original, unmodified
+body geometry (no engineering simplification needed) while resolving the
+mesh defect through correct BoundaryLayer field configuration.
+
+Case 3 (filleted + extended EdgesList) is preserved as a comparison/
+sensitivity case: `mesh/case3_filleted_extendedEdges_wedge.geo/.msh`.
+Case 1 (sharp + original EdgesList, the original defective configuration)
+is preserved for the record: `mesh/case1_sharpcorner_originalEdges_wedge.geo`.
+
+## New observation (Case 4 checkMesh, distinct from the resolved defect)
+
+Case 4's `checkMesh` reports one remaining quality flag NOT present in
+Case 3: `Max skewness = 4.00243, 1 highly skew faces detected`. Located
+(via direct coordinate lookup, face ID 56102) at x≈0.551, r≈0.005 - in
+the wake/axis-downstream region, ~14cm aft of the base (x=0.417), NOT
+at the cone/base corner. Visually confirmed via
+`scripts/mesh/plot_baseline_case4_check.py`
+(`results/figures/baseline_case4_check.png`): the cone/base corner region
+is clean and well-structured; the skew face sits in a dense band of thin
+triangles along the centerline in the coarsening wake-transition zone,
+plausibly from axis-line/surrounding-triangulation size mismatch - an
+unrelated mechanism to the corner investigation.
+
+Per explicit decision: this is recorded as a quantified, monitored
+observation, NOT actioned with a geometry or mesh change at this stage.
+It will be revisited only if solver-viability testing demonstrates
+instability attributable to this location, or if it is shown to
+materially affect a quantity of interest.
+
+## STATUS: Mesh investigation phase CLOSED
+
+Per explicit instruction, no further mesh-quality fixes will be pursued
+at this stage. Next phase: controlled solver-viability testing of the
+adopted Case 4 baseline (sharp-corner geometry, extended EdgesList),
+inspecting numerical and physical behaviour before proceeding to
+convergence/validation work.
