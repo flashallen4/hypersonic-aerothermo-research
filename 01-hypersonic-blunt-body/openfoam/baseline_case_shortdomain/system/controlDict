@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM
+   \\    /   O peration     |
+    \\  /    A nd           |
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Minimal placeholder controlDict - required for OpenFOAM's Time object
+// to initialize even for non-time-stepping utilities like gmshToFoam.
+// Will be replaced with real solver settings once we reach the
+// rhoCentralFoam solver-setup stage.
+
+application     rhoCentralFoam;
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         0.001;
+
+deltaT          1e-10;
+
+writeControl    timeStep;
+writeInterval   5;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  6;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+
+adjustTimeStep  yes;
+maxCo           0.5;
+maxDeltaT       1e-6;
+
+functions
+{
+    probeCorner
+    {
+        type            probes;
+        libs            ("libsampling.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        fields          (T p U);
+        probeLocations
+        (
+            (0.41616 0.14933 0)
+        );
+    }
+}
+// ************************************************************************* //

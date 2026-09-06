@@ -106,3 +106,21 @@ conclusions.
 
 **In progress** — specification approved, directory structure created.
 Geometry, mesh, and solver setup not yet started.
+
+---
+
+## UPDATE — 2026-09-06: Corner Topology Fix, Domain Restructuring, and Corner Instability Investigation
+
+### Summary
+Following the geometry/mesh-sizing work documented above, this session investigated and resolved a mesh-topology defect at the cone/base corner, adopted a revised baseline mesh, tested a domain-shortening change to address a separate numerical instability, and conducted a controlled investigation into that instability's root cause. The instability itself remains **unresolved and is accepted as a known, documented limitation** — see CASE_SPECIFICATION.md for full technical detail.
+
+### Key decisions made this session
+1. **Baseline mesh adopted: "Case 4"** — original sharp-corner geometry (no fillet) with the BoundaryLayer field's `EdgesList` extended from `{2,3}` to `{2,3,4}` (including `wall_base`). This was established via a rigorous 2×2 controlled experiment as the cause of a previously-observed open-cell/misoriented-face defect at the cone/base corner, independent of wall geometry. A 3mm fillet, tested in parallel, was confirmed **not required** to resolve this defect.
+2. **Downstream domain extent shortened**: outlet moved from 3×L (~1.25m total domain) to L+0.3×R_n (~1.5cm past the base), to address a separate negative-pressure/Courant-instability found during solver-viability testing on the clean Case 4 mesh. This required two failed geometric attempts (collinear-edge and near-parallel-edge degeneracies) before a working right-angle-corner solution was found.
+3. **A distinct instability at the cone/base corner region was identified, investigated, and NOT resolved.** It is documented as a known limitation (see below and CASE_SPECIFICATION.md). Domain-shortening was conclusively shown NOT to be the cause or cure.
+
+### Known limitation: cone/base corner numerical instability
+A persistent solver instability originates at the cone/base corner (x≈0.4166m, r≈0.1494m), causing solver failure (`sigFpe` / iteration-limit abort) at a consistent simulation time of ~1.62–1.65×10⁻⁸ s across multiple mesh/timestep configurations. Root cause not established. Full investigation, evidence, and rejected/attempted fixes are documented in CASE_SPECIFICATION.md. **This must be revisited if downstream validation results (Fay-Riddell, Billig) show unphysical behavior without other explanation.**
+
+### Status
+Baseline mesh (short-domain, Case 4) is topologically verified and considered the primary Project 01 baseline going forward. Solver-viability testing revealed the above instability, which is deprioritized per explicit decision, not fixed. Next planned step: grid convergence study (verification) and validation against Fay-Riddell/Billig correlations, proceeding with awareness of this open item.

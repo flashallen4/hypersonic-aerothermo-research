@@ -16,7 +16,6 @@ L = x_t + (R_b - r_t) / Tan(theta_c);
 
 x_upstream = -6 * R_n;
 r_outer    = 15 * R_n;
-x_downstream = 3 * L;
 
 lc_far   = 0.03;
 lc_wall  = 0.001;
@@ -36,8 +35,13 @@ p_nose_tip   = nose_pts[0];
 p_tangent    = nose_pts[n_nose];
 p_base_outer = newp; Point(p_base_outer) = {L, R_b, 0, lc_wall};
 p_base_axis  = newp; Point(p_base_axis)  = {L, 0, 0, lc_far};
-p_wake_axis  = newp; Point(p_wake_axis)  = {x_downstream, 0, 0, lc_far};
-p_outlet_top = newp; Point(p_outlet_top) = {x_downstream, r_outer, 0, lc_far};
+x_outlet = L + 0.3 * R_n;  // moderate standoff (~1.5cm) - true zero-offset
+                             // found geometrically unachievable (shallow-angle
+                             // curves caused self-intersection, not a clean
+                             // corner); this gives a genuine right-angle
+                             // corner instead
+p_short_axis = newp; Point(p_short_axis) = {x_outlet, 0, 0, lc_far};
+p_outlet_top = newp; Point(p_outlet_top) = {x_outlet, r_outer, 0, lc_far};
 p_farfield_up = newp; Point(p_farfield_up) = {x_upstream, r_outer, 0, lc_far};
 p_axis_up    = newp; Point(p_axis_up)    = {x_upstream, 0, 0, lc_far};
 
@@ -45,8 +49,8 @@ Line(1) = {p_axis_up, p_nose_tip};
 Spline(2) = nose_pts[];
 Line(3) = {p_tangent, p_base_outer};
 Line(4) = {p_base_outer, p_base_axis};
-Line(5) = {p_base_axis, p_wake_axis};
-Line(6) = {p_wake_axis, p_outlet_top};
+Line(5) = {p_base_axis, p_short_axis};  // short axis segment (right-angle corner)
+Line(6) = {p_short_axis, p_outlet_top}; // outlet (vertical)
 Line(7) = {p_outlet_top, p_farfield_up};
 Line(8) = {p_farfield_up, p_axis_up};
 

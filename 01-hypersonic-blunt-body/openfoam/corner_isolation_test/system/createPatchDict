@@ -1,0 +1,49 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  11
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      createPatchDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+pointSync false;
+
+patches
+(
+    {
+        name            cut_inlet_upstream;
+        patchInfo
+        {
+            type        patch;
+        }
+        constructFrom   set;
+        set             cut_inlet_upstream;
+    }
+    {
+        name            cut_outlet_downstream;
+        patchInfo
+        {
+            type        patch;
+        }
+        constructFrom   set;
+        set             cut_outlet_downstream;
+    }
+    {
+        name            cut_outer_radial;
+        patchInfo
+        {
+            type        patch;
+        }
+        constructFrom   set;
+        set             cut_outer_radial;
+    }
+);
+
+// ************************************************************************* //

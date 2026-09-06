@@ -1,0 +1,88 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  11
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      topoSetDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Split oldInternalFaces (the subsetMesh cut boundary) into three spatial
+// groups by face-centre location, for directional BC assignment.
+
+actions
+(
+    {
+        name    oldIF_all;
+        type    faceSet;
+        action  new;
+        source  patchToFace;
+        patch   oldInternalFaces;
+    }
+
+    {
+        name    cut_inlet_upstream;
+        type    faceSet;
+        action  new;
+        source  boxToFace;
+        box     (0.349 -0.02 -0.02) (0.351 0.17 0.02);
+    }
+    {
+        name    cut_inlet_upstream;
+        type    faceSet;
+        action  subset;
+        source  faceToFace;
+        set     oldIF_all;
+    }
+
+    {
+        name    cut_outlet_downstream;
+        type    faceSet;
+        action  new;
+        source  boxToFace;
+        box     (0.424 -0.02 -0.02) (0.427 0.17 0.02);
+    }
+    {
+        name    cut_outlet_downstream;
+        type    faceSet;
+        action  subset;
+        source  faceToFace;
+        set     oldIF_all;
+    }
+
+    {
+        name    cut_outer_radial;
+        type    faceSet;
+        action  new;
+        source  boxToFace;
+        box     (0.34 -0.02 -0.02) (0.43 0.17 0.02);
+    }
+    {
+        name    cut_outer_radial;
+        type    faceSet;
+        action  subset;
+        source  faceToFace;
+        set     oldIF_all;
+    }
+    {
+        name    cut_outer_radial;
+        type    faceSet;
+        action  delete;
+        source  faceToFace;
+        set     cut_inlet_upstream;
+    }
+    {
+        name    cut_outer_radial;
+        type    faceSet;
+        action  delete;
+        source  faceToFace;
+        set     cut_outlet_downstream;
+    }
+);
+
+// ************************************************************************* //

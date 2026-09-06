@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM
+   \\    /   O peration     |
+    \\  /    A nd           |
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [1 -1 -2 0 0 0 0];
+
+internalField   uniform 1197;
+
+boundaryField
+{
+    farfield_upstream
+    {
+        type            fixedValue;
+        value           uniform 1197;
+    }
+    farfield_outer
+    {
+        type            fixedValue;
+        value           uniform 1197;
+    }
+    outlet
+    {
+        type            zeroGradient;
+    }
+    wall_nose
+    {
+        type            zeroGradient;
+    }
+    wall_cone
+    {
+        type            zeroGradient;
+    }
+    wall_base
+    {
+        type            zeroGradient;
+    }
+    frontWedge
+    {
+        type            wedge;
+    }
+    backWedge
+    {
+        type            wedge;
+    }
+    defaultFaces
+    {
+        type            zeroGradient;
+    }
+}
+
+// ************************************************************************* //
