@@ -24,14 +24,14 @@ startFrom       startTime;
 startTime       0;
 
 stopAt          endTime;
-endTime         0.00001;
+endTime         0.001;
 
-deltaT          0.0000001;
+deltaT          1e-10;
 
 writeControl    timeStep;
-writeInterval   1;
+writeInterval   50;
 
-purgeWrite      0;
+purgeWrite      20;
 
 writeFormat     ascii;
 writePrecision  6;
@@ -42,4 +42,23 @@ timePrecision   6;
 
 runTimeModifiable true;
 
+adjustTimeStep  yes;
+maxCo           0.5;
+maxDeltaT       1e-6;
+
+functions
+{
+    probeCorner
+    {
+        type            probes;
+        libs            ("libsampling.so");
+        writeControl    timeStep;
+        writeInterval   1;
+        fields          (T p U);
+        probeLocations
+        (
+            (0.41616 0.14933 0)
+        );
+    }
+}
 // ************************************************************************* //

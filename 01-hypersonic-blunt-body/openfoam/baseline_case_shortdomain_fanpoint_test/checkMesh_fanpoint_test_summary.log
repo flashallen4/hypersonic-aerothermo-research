@@ -1,0 +1,33 @@
+Checking patch topology for multiply connected surfaces...
+    Patch               Faces    Points   Surface topology
+    frontWedge          48947    35305    ok (non-closed singly connected)
+    wall_nose           66       133      ok (non-closed singly connected)
+    wall_base           38       77       ok (non-closed singly connected)
+    outlet              60       121      ok (non-closed singly connected)
+    farfield_upstream   25       51       ok (non-closed singly connected)
+    backWedge           48947    35305    ok (non-closed singly connected)
+    wall_cone           393      788      ok (non-closed singly connected)
+    farfield_outer      25       52       ok (non-closed singly connected)
+
+Checking geometry...
+    Overall domain bounding box (-0.3 0 -0.0130893) (0.431622 0.749886 0.0130893)
+    Mesh has 2 geometric (non-empty/wedge) directions (1 1 0)
+    Mesh has 3 solution (non-empty) directions (1 1 1)
+    Wedge frontWedge with angle 1.00008 degrees
+ ***Wedge patch frontWedge not planar. Point (-0.00529127 0.00148436 -2.59097e-05) is not in patch plane by 2.96788e-08 metre.
+    Boundary openness (5.19826e-18 -1.49725e-16 -2.25872e-15) OK.
+    Max cell openness = 6.33466e-15 OK.
+    Max aspect ratio = 761.778 OK.
+    Minimum face area = 6.50114e-12. Maximum face area = 0.000967976.  Face area magnitudes OK.
+    Min volume = 3.40327e-14. Max volume = 1.25184e-05.  Total volume = 0.00710951.  Cell volumes OK.
+    Mesh non-orthogonality Max: 89.9202 average: 8.51762
+   *Number of severely non-orthogonal (> 70 degrees) faces: 260.
+    Non-orthogonality check OK.
+  <<Writing 260 non-orthogonal faces to set nonOrthoFaces
+    Face pyramids OK.
+    Max skewness = 3.16271 OK.
+    Coupled point location match (average 0) OK.
+
+Failed 1 mesh checks.
+
+End

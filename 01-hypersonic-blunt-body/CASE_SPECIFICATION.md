@@ -227,3 +227,69 @@ yet started.
 **DECISION (explicit, by user):** The corner instability is **accepted as a known, unresolved limitation** of the current mesh methodology. No further active debugging at this time. **Trigger for revisiting:** if grid convergence, validation (Fay-Riddell/Billig), or any downstream quantity-of-interest shows unphysical behavior without another clear explanation, this corner instability is the prime suspect and should be revisited first — including reconsidering the previously-shelved 3mm fillet (tested only against the now-resolved topology defect, never against this distinct instability) and/or a proper `mapFields`-based sub-domain reconstruction.
 
 **Files preserved from this investigation:** `openfoam/baseline_case_shortdomain_tighttimestep/` (timestep-sensitivity test case), `openfoam/corner_isolation_test/` (sub-domain isolation attempt, includes `topoSetDict`, `createPatchDict`), `scripts/mesh/diagnose_crash_location_generalized_v2.py`, `scripts/mesh/local_neighborhood_diagnostic.py`, `scripts/mesh/build_isolated_subcase_fields.py`, `scripts/mesh/compare_corner_cell_topology.py`, `scripts/mesh/inspect_cell_direct.py`, `mesh/test_multi_bl_field.geo` (Gmsh Min-combination viability test, negative result).
+
+---
+
+## UPDATE — 2026-09-08: Numerical Sensitivity Experiments and Fan-Point Mesh Fix
+
+### 1. Option 4 — PIMPLE Outer-Correction Sensitivity (nOuterCorrectors 1→10)
+
+Single-variable test, baseline short-domain mesh, all other settings unchanged. Found via literature search (arXiv paper on "shockFluidX," an extension explicitly adding meaningful PIMPLE outer-correction exploitation to vanilla shockFluid) that vanilla `shockFluid`/`rhoCentralFoam` likely does not deeply use outer-corrector iterations for stability.
+
+**Result:** Failure delayed from 1.62449e-08s to 1.78058e-08s (+9.6%). Failure occurred on PIMPLE outer-iteration 2 of 10 allotted — corruption too severe for additional correction passes to help. **Conclusion: measurable but insufficient effect. Recorded as partial sensitivity result, not a fix.**
+
+### 2. Option 3 — Global Convection Scheme Sensitivity (vanAlbada→Minmod)
+
+Investigated whether OpenFOAM supports spatially-local (cellZone-restricted) scheme selection for div/interpolation schemes — confirmed via documentation review (OpenFOAM v6-v13 user guides) that this is NOT supported; schemes are applied per-field/per-term globally only. Proceeded with a global scheme change instead, as a numerical-dissipation sensitivity study (not a local corner treatment).
+
+Single-variable change: `reconstruct(rho)`, `reconstruct(U)`, `reconstruct(T)` in `interpolationSchemes` changed from `vanAlbada` to `Minmod` (a standard, more dissipative TVD limiter). All other settings restored to baseline (nOuterCorrectors=1, original timestep control).
+
+**Result:** Failure delayed from 1.62449e-08s to 1.92355e-08s (+18.4%). Same failure mechanism (sigFpe), same corner location (Cell 4633, x≈0.4166, r≈0.1494). Spatial diagnosis at last pre-crash snapshot showed deeper p/rho collapse magnitude and a new local Ux flow reversal not seen in the baseline snapshot — but since the two snapshots were captured at different physical times (Minmod survived longer), this was explicitly NOT interpreted as a scheme-induced qualitative change, per the requirement not to infer causation from non-equivalent-time comparisons. **Conclusion: measurable dissipation sensitivity, does not remove the underlying instability.**
+
+### 3. Deep Corner Topology Diagnosis (Cells 4632-4637)
+
+Read-only diagnostic computing exact per-face non-orthogonality and skewness (via direct geometric calculation from owner/neighbour cell centroids and face normals — not just checkMesh's aggregate figures), cell shape classification, and axial BL-layer depth (x-L) for the corner cluster and off-corner reference cells.
+
+**Findings:**
+- All seed cells (4632-4637) are clean hexahedra, axial BL growth entirely normal (ratio ≈1.10-1.17, consistent with specified ratio=1.12).
+- Two faces per cell are near-perfect (non-orthogonality <0.2°, skew <0.002): the axial (layer-to-layer) face and the inward-radial face.
+- **The outward-radial face is severely skewed (0.64-0.65) across the entire depth of the cluster** — this face connects each wall_base-stack cell directly to a cell (e.g., 19248) that is itself the terminal, wall-adjacent cell of the INDEPENDENTLY-GENERATED wall_cone BL stack.
+- **Off-corner reference cells on wall_base (19374, 20046), despite comparable or higher aspect ratio (741-850 vs 749-873 at the corner), show PERFECT connectivity (0.00°, 0.0000 skew) on all faces.** This decisively shows aspect ratio alone does not explain the anomaly — the specific cross-stack connecting face is the true, isolated defect.
+- **Conclusion: Cell 4633 and its axial neighbors are ordinary BL cells whose single outward-radial connection happens to bridge two independently-grown, topologically unrelated BL stacks without any blending treatment — this is the corner-specific anomaly.**
+
+### 4. Proposed and Implemented Experiment: FanPointsList Extension
+
+**Rationale:** Gmsh's BoundaryLayer field already handles exactly one convex corner (nose tip, where axis meets nose curve) via `FanPointsList = {p_nose_tip}`. The cone/base corner (`p_base_outer`, where curve 3/cone meets curve 4/base, both already under the same BL field's EdgesList={2,3,4}) is structurally the same category of feature and was NOT in FanPointsList — a clean, minimal, single-variable candidate directly targeting the diagnosed anomaly.
+
+**Implementation:** Single-line change: `Field[1].FanPointsList = {p_nose_tip};` → `Field[1].FanPointsList = {p_nose_tip, p_base_outer};`. No other geometry, domain, BC, scheme, or timestep setting changed. New mesh (+96 cells vs baseline, 48,947 total) generated, verified clean (2D check, full 3D regeneration, error-free), converted, wedge-retyped.
+
+**Mesh-level verification (checkMesh comparison):**
+
+| Metric | Baseline (no fan point) | Fan-point-added | Change |
+|---|---|---|---|
+| Max aspect ratio | 761.778 OK | 761.778 OK | Identical |
+| Max non-orthogonality | 89.9202° | 89.9202° | Identical |
+| Severely non-orthogonal faces | 247 | 260 | Slightly worse |
+| Max skewness | 3.75573 OK | 3.16271 OK | Improved (~16%) |
+| Topology | Clean | Clean | Unchanged |
+
+**Targeted topology re-diagnosis (Cells 4632-4636 post-fan-point):** Outward-radial face skew dropped from 0.64-0.65 to 0.0000-0.0031 — a 200-600x improvement, now matching healthy reference cells. The fan-point mechanism inserted new, properly-blended transition cells (e.g., 20925, 20969 — small prism/hex cells bridging the two stacks) rather than directly connecting them face-to-face. **Directly confirms the diagnostic hypothesis.**
+
+**Solver-viability result:** Case directory `openfoam/baseline_case_shortdomain_fanpoint_test/` (experimental, NOT yet promoted to primary baseline). Identical solver settings to original baseline (vanAlbada, nOuterCorrectors=1, maxCo=0.5, maxDeltaT=1e-6).
+
+- Failure delayed from 1.62449e-08s to **~4.32-4.52e-07s — approximately 28x longer survival** (two consistent runs: one interrupted by an unrelated filesystem I/O failure at t=4.32643e-07s with fields showing stable/healthy residuals up to that point; a clean restart from t=0 reached t=4.52441e-07s before failing via the same sigFpe/hePsiThermo::calculate() mechanism).
+- Original epicenter cells (4632-4637) confirmed via time-history tracking and final-snapshot inspection to be stable, well-behaved (p in the range 42-65 Pa at failure time, vs the original ~29-131 Pa collapse toward near-zero).
+- **New instability epicenter identified one radial layer inward: Cells 19290-19294 (x≈0.4166, r≈0.1482).** p collapses to ~0.8-1.6 Pa, rho to ~8-9.5e-6 kg/m³ at these cells — a new, coherent low-pressure sheet.
+- **Topology re-diagnosis of 19290-19294 shows PERFECT connectivity: 0.00° non-orthogonality, 0.0000 skewness on every face — matching healthy reference cells exactly. No topological anomaly found at the new failure site.**
+
+**Time-history assessment (Cells 4632-4637, all available snapshots from t=0 to t=4.305e-07s):** p, T, rho, Ux all show sustained, monotonic (or slowly reversing but still actively evolving) trends throughout — NOT quasi-steady at any point up to failure. This mesh configuration, despite the major stability improvement, is not yet demonstrated suitable for grid-convergence work without further investigation into reaching genuine steady-state behavior.
+
+### Revised causal understanding
+
+The corner instability is most consistent with a genuine, severe local flow-physics phenomenon at the sharp convex cone/base corner (a strong local expansion), which is numerically difficult for this solver/scheme/mesh combination to resolve robustly. The originally-diagnosed mesh-topology defect (skewed cross-stack BL connection) was a real, contributing factor whose fix produced a large, genuine improvement — but its resolution unmasked a second, topologically clean failure site nearby, indicating the underlying driver is not fully explained by mesh topology alone.
+
+### Status of fan-point mesh
+**Experimental — not promoted to primary baseline.** Preserved at `openfoam/baseline_case_shortdomain_fanpoint_test/` pending decision on next steps (e.g., extending FanPointsList treatment further, investigating the new 19290-19294 site specifically, or accepting current state as sufficient for a different validation strategy).
+
+### Practical/environment note (unrelated to CFD findings, recorded for reproducibility)
+During this investigation, the WSL2 virtual disk (`ext4.vhdx`) grew to consume 100% of the host Windows C: drive, causing a mid-run filesystem I/O failure (read-only filesystem, corrupting the two most recent timestep checkpoints of an in-progress solver run). Resolved via: Windows-side cleanup (hiberfil.sys, Recycle Bin, WinSxS component cleanup), WSL-side deletion of superseded/documented experimental case run-outputs, `sudo fstrim -av` (851GB marked reclaimable) followed by `wsl --shutdown` + `diskpart compact vdisk` (reclaimed ~19GB, VHD 175.5GB→156.4GB). `controlDict` updated with `purgeWrite 20` and coarser `writeInterval 50` to prevent recurrence on future long exploratory runs.

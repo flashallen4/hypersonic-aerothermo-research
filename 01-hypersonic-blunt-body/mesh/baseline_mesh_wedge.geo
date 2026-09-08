@@ -61,7 +61,7 @@ Field[1].ratio = 1.12;
 Field[1].thickness = 0.006;
 Field[1].Quads = 1;
 Field[1].NbLayers = 40;
-Field[1].FanPointsList = {p_nose_tip};
+Field[1].FanPointsList = {p_nose_tip, p_base_outer};
 BoundaryLayer Field = 1;
 
 // --- Field 2: Shock-layer refinement box (Option C) ---

@@ -124,3 +124,23 @@ A persistent solver instability originates at the cone/base corner (x≈0.4166m,
 
 ### Status
 Baseline mesh (short-domain, Case 4) is topologically verified and considered the primary Project 01 baseline going forward. Solver-viability testing revealed the above instability, which is deprioritized per explicit decision, not fixed. Next planned step: grid convergence study (verification) and validation against Fay-Riddell/Billig correlations, proceeding with awareness of this open item.
+
+---
+
+## UPDATE — 2026-09-08: Numerical Sensitivity Testing and Fan-Point Mesh Experiment
+
+### Summary
+Following the corner-instability investigation documented above, this session tested numerical-dissipation sensitivity (PIMPLE outer-correction count, convection scheme) and a targeted mesh-topology fix (Gmsh BoundaryLayer FanPointsList) against the known cone/base corner instability. The mesh fix produced a dramatic (~28x) improvement in survival time but did NOT eliminate the instability — it relocated to an adjacent, topologically clean region. The instability is now understood to be more likely a genuine local flow-physics challenge at the sharp convex corner than a pure mesh-topology artifact, though mesh sensitivity remains a contributing factor.
+
+### Key results
+1. **PIMPLE outer-correction sensitivity (nOuterCorrectors 1→10):** delayed failure by ~9.6% (1.624e-8s → 1.781e-8s). Confirms vanilla `shockFluid` does not deeply exploit outer correction for stability (consistent with literature comparison to shockFluidX, which explicitly adds this capability).
+2. **Global scheme sensitivity (vanAlbada→Minmod):** delayed failure by ~18.4% (1.624e-8s → 1.924e-8s). Same failure mechanism, same corner location. Confirms scheme dissipation has a real but insufficient effect.
+3. **Fan-point mesh fix (adding `p_base_outer` to `Field[1].FanPointsList`):** Deep topology diagnosis of Cells 4632-4637 revealed the true anomaly was not aspect ratio (present throughout wall_base, including in perfectly healthy cells) but a severely skewed (skew≈0.65) face connecting the wall_base BL stack directly to the wall_cone BL stack's terminal cell. Adding the corner point to FanPointsList (Gmsh's documented mechanism for exactly this two-BL-edges-meeting-at-a-point scenario) resolved this specific skew (→0.0000-0.0031, matching healthy reference cells) with zero cost to aspect ratio, non-orthogonality, or other settings.
+4. **Result: failure delayed from 1.624e-8s to ~4.32-4.52e-7s — approximately 28x longer survival**, with the original epicenter cells (4632-4637) now stable and well-behaved. However, the instability re-emerged one radial layer inward (Cells 19290-19294), in cells confirmed via the same topology diagnostic to be PERFECTLY clean (0.00° non-orthogonality, 0.0000 skewness) — ruling out a topological mesh explanation at the new location.
+5. **Time-history tracking of the corner region confirms the flow was still actively, monotonically evolving (not quasi-steady) at the time of failure** — meaning even the fan-point mesh's current state is not yet suitable for grid-convergence work without further investigation.
+
+### Revised understanding
+The corner instability is most likely driven by genuine, severe local flow physics (a sharp convex expansion at the cone/base corner) that is difficult for this solver/scheme/mesh combination to resolve robustly — mesh topology fixes can significantly delay and relocate the failure but have not eliminated it. This is a stronger, more specific characterization than the previous "known limitation, cause unresolved" framing.
+
+### Status
+Baseline mesh remains the adopted short-domain Case 4 configuration (fan-point fix NOT yet promoted to the primary baseline — remains an experimental variant, `openfoam/baseline_case_shortdomain_fanpoint_test/`). Grid convergence work is deferred pending either (a) further investigation into achieving genuine quasi-steady behavior before failure, or (b) an explicit decision to proceed with validation using only quantities that stabilize well before the failure point, if any do.
