@@ -161,3 +161,130 @@ Deferred: total drag, pending quantification of base-pressure contribution to ax
 
 ### Status
 Proceeding to temporal-independence study of forebody QoIs (using existing fan-point run data) before beginning grid convergence.
+
+---
+
+## Session Update: Axis-Topology Investigation, Shock Stand-Off Rejection, and Final Temporal Assessment
+
+### Axis/Stagnation-Streamline Mesh-Topology Investigation
+
+A dedicated mesh-topology diagnostic (`scripts/mesh/axis_topology_diagnostic.py`, read-only,
+existing mesh only) was performed to resolve contamination discovered in an initial shock-detection
+attempt.
+
+**Finding:** the wedge mesh represents r=0 via 58 true axis points (points with r <= 1e-12) and 112
+axis-adjacent faces, all of type `frontWedge`/`backWedge` (never internal or wall patches). These
+resolve to exactly 56 unique axis-adjacent cells, forming a clean, monotonic, non-duplicated sequence
+in x from far upstream (x=-0.28244 m) to the stagnation cell (48880, x=-0.00011 m) directly adjacent
+to `wall_nose`. Zero near-duplicate-x pairs were found among these cells (uniqueness check).
+
+By contrast, the previously-used r<0.003 m radius-tolerance selection pulled in ~7x more cells in the
+same x-range (134 vs 18 in x in [-0.015, 0.005]), including cells at multiple distinct radii near
+nearly identical x — an artifact of the body's curvature near the nose, not a true 1D axis profile.
+In the bin [0.000, 0.001) specifically (the exact region of the previously-detected "shock" at
+0.03-0.14mm), there were 0 true axis cells but 28 tolerance-selected cells, confirming that region is
+entirely off-axis-cell contamination.
+
+### Shock Stand-Off: Prior Detections Formally Rejected
+
+Both prior shock-detection attempts are formally rejected as invalid:
+- The original "first axis cell where p > 2*p_inf" method (result: ~0.11 mm stand-off).
+- The subsequent peak-|dp/dx|/peak-|drho/dx| method applied to the r<0.003-tolerance-selected axis
+  (result: ~0.03-0.14 mm stand-off, varying by snapshot).
+
+Both were built on a contaminated cell selection (multiple radial rays interleaved at similar x),
+producing large spurious gradients that do not correspond to a real physical shock crossing. This is
+confirmed directly via the mesh-topology investigation above, not merely suspected.
+
+### True-Axis Field Profile (uncontaminated, LATE snapshot t=4.48921e-07 s)
+
+Using the 56 true axis-adjacent cells: clean freestream (p=1197 Pa, M=7.000) from x=-0.282 to
+x=-0.012 m; a weak, small pre-shock disturbance (x=-0.0118 to -0.0092 m, p dips slightly, M rises
+slightly above 7); then a genuine, smooth, monotonic compression from x=-0.008 m to the stagnation
+cell (p: 1251 -> 1327 -> 1384 -> 1507 -> 1573 -> 1649 -> 1703 -> 1747 -> 1776 Pa; M: 6.84 -> 6.64 ->
+6.49 -> 6.21 -> 6.06 -> 5.90 -> 5.80 -> 5.73 -> 5.68). One cell (48881, x=-0.00048 m) shows clearly
+non-physical values (p=0.846 Pa, T=0.32 K, M=65.05) -- a numerical artifact, not a flow feature.
+Stagnation cell 48880 shows p=12586.10 Pa, T=560.79 K, M=4.420, exactly matching the independently
+computed p_stag value from the temporal-independence QoI script at the same snapshot -- confirming
+internal consistency of the stagnation-cell identification.
+
+**Conclusion (conservative, as required):** the nose flow contains a progressively strengthening
+compression region, but a distinct, steady bow-shock discontinuity has not yet developed in the
+currently available solution. The onset location (~8 mm upstream) is broadly consistent with the
+Billig-correlation estimate for this geometry (R_n=0.05 m, M=7: delta ~= 7.6 mm), which is
+encouraging, but the compression itself remains smeared/gradual (p reaches only ~1780-2040 Pa,
+roughly 1.5-1.7x freestream, prior to the corrupted cell, and only ~10.5x freestream at the
+stagnation cell itself) rather than exhibiting the near-instantaneous jump expected of a
+well-captured M=7 normal shock (theoretical p2/p1=57.0, rho2/rho1=5.444, T2/T1=10.469). No claim is
+made about whether this compression would eventually steepen into a sharp discontinuity given more
+simulation time; the available data does not establish that either way. No new shock-detection
+algorithm has been implemented as a result of this finding -- it is documented as a negative/open
+result.
+
+### Final Temporal Assessment (Primary Fan-Point Mesh, Frozen Configuration)
+
+A final continuation run was performed strictly under the frozen configuration (geometry, mesh,
+fvSchemes, solver settings, BCs all unchanged; only diagnostic output frequency, writeInterval,
+had been previously tightened to 2 for data-capture purposes). No new intervention (no mesh/scheme/
+solver/fvConstraints change) was introduced during this assessment.
+
+**Dataset:** 24 snapshots, t=1.0604e-08 s to t=4.48921e-07 s.
+
+**Convergence criterion (pre-defined):** |Q(i)-Q(i-1)|/Q(i-1) < 1% for 3 consecutive snapshots, with
+a non-reversing (monotonically decreasing or flat) trend.
+
+**A. q_stag temporal independence:** YES, by the formal criterion. Last three consecutive
+   relative changes: 0.403%, 0.301%, 0.295% (all <1%, monotonically decreasing).
+
+**B. p_stag temporal independence:** YES, by the formal criterion. Last three consecutive
+   relative changes: 0.433%, 0.388%, 0.384% (all <1%, monotonically decreasing).
+
+**C. Base-region breakdown vs QoI convergence:** breakdown occurred AFTER QoI convergence, but only
+   marginally -- the convergence window closes at t=4.4892e-07 s; the deterministic sigFpe failure
+   (same mechanism as previously documented: hePsiThermo::calculate()) occurs at approximately
+   t=4.496-4.501e-07 s, roughly 7-10e-9 s (~10-14 iterations) later. This is characterized as a
+   marginal pass, not a robust, far-from-breakdown plateau.
+
+**D. Final usable temporal window / convergence times:** full usable window t=1.0604e-08 s to
+   4.48921e-07 s; q_stag and p_stag convergence window t=4.4610e-07 s to t=4.4892e-07 s (same three
+   snapshots for both quantities); failure at ~4.496-4.501e-07 s (exact value varies slightly,
+   ~0.001-0.01e-07 s, across restart attempts due to ASCII checkpoint round-trip precision --
+   consistent with previously documented restart-precision sensitivity, not a new finding).
+
+**E. Final QoI status:**
+  - Forebody surface pressure (5 wall_cone stations): temporally independent, converged early
+    (~t=6.6e-8 s onward), stable ~8650-9200 Pa band, demonstrably unaffected by later base-region
+    rarefaction growth. Strongest, most robust QoI in the project to date.
+  - Stagnation heat flux (q_stag): meets the formal criterion, but only in a narrow (~2.8e-8 s)
+    window close to breakdown -- classified as a MARGINAL PASS.
+  - Stagnation pressure (p_stag): same -- MARGINAL PASS.
+  - Shock stand-off distance: NO DEFENSIBLE VALUE. Both prior results (0.11 mm; 0.03-0.14 mm)
+    formally rejected as axis-contamination artifacts (see above). True-axis analysis shows a
+    progressively strengthening, not-yet-steady compression region -- documented as a genuine
+    negative/open result, not a detection-method failure.
+  - Drag: still deferred (base-pressure contribution to total axial force remains unquantified).
+
+**F. Grid-convergence readiness:** Project 01 may proceed to grid convergence for FOREBODY SURFACE
+   PRESSURE ONLY. Stagnation quantities (q_stag, p_stag) remain formally unresolved for grid-study
+   purposes -- their marginal, near-breakdown convergence window is not considered a sufficiently
+   robust basis, since mesh refinement is expected to alter the timescale on which base-region
+   breakdown occurs, potentially shifting or eliminating this narrow window. Shock stand-off is not
+   ready for grid convergence in any form; no baseline value exists to refine.
+
+**G. No new intervention:** confirmed via direct git diff against the last committed
+   thermophysicalProperties (zero difference) and via explicit grep of controlDict before and after
+   this run. No mesh/scheme/solver/fvConstraints modification was made during this assessment. The
+   final run's failure to capture one additional snapshot (falling ~10-14 iterations short of the
+   writeInterval=2 threshold) was accepted as the natural boundary of the frozen configuration's
+   available data, not treated as grounds for a further intervention cycle.
+
+### New diagnostic scripts this session
+- `scripts/mesh/shock_standoff_detection.py` -- peak-|dp/dx| / peak-|drho/dx| method; produced the
+  now-rejected 0.03-0.14mm results using r<0.003-tolerance axis selection. Preserved for reference
+  and as documentation of a rejected approach; NOT to be used for shock-location claims.
+- `scripts/mesh/axis_structure_diagnostic.py` -- full axis-profile and multi-peak candidate-feature
+  diagnostic (still uses r-tolerance selection; superseded for axis-cell selection purposes by the
+  topology diagnostic below, but retained for its general profile/peak-characterization logic).
+- `scripts/mesh/axis_topology_diagnostic.py` -- the decisive tool: identifies true axis-adjacent
+  cells via degenerate-wedge-face connectivity (not radius tolerance), confirms a unique monotonic
+  56-cell stagnation-streamline sequence, and is the basis for the topology conclusions above.
