@@ -293,3 +293,38 @@ The corner instability is most consistent with a genuine, severe local flow-phys
 
 ### Practical/environment note (unrelated to CFD findings, recorded for reproducibility)
 During this investigation, the WSL2 virtual disk (`ext4.vhdx`) grew to consume 100% of the host Windows C: drive, causing a mid-run filesystem I/O failure (read-only filesystem, corrupting the two most recent timestep checkpoints of an in-progress solver run). Resolved via: Windows-side cleanup (hiberfil.sys, Recycle Bin, WinSxS component cleanup), WSL-side deletion of superseded/documented experimental case run-outputs, `sudo fstrim -av` (851GB marked reclaimable) followed by `wsl --shutdown` + `diskpart compact vdisk` (reclaimed ~19GB, VHD 175.5GB→156.4GB). `controlDict` updated with `purgeWrite 20` and coarser `writeInterval 50` to prevent recurrence on future long exploratory runs.
+
+---
+
+## UPDATE — 2026-09-08 (cont.): Final Synthesis of Corner/Base Investigation — Modeling-Domain Limitation Identified
+
+### Investigation progression (summary)
+
+1. A local corner topology defect was identified at the cone/base junction: a severely skewed (skew≈0.64-0.65) face directly connecting the independently-grown wall_base and wall_cone BoundaryLayer stacks, with no blending treatment.
+2. A controlled, single-variable fan-point correction (adding `p_base_outer` to `Field[1].FanPointsList`) removed this specific topological defect, verified via direct geometric recomputation (skew reduced to 0.0000-0.0031, matching healthy reference cells).
+3. Solver survival time improved by approximately 28x (1.624e-8s → ~4.3-4.5e-7s) as a direct result.
+4. The instability subsequently relocated to an adjacent region (Cells 19290-19294, one radial layer inward) that was independently confirmed, via the same topology diagnostic, to be topologically PERFECT (0.00° non-orthogonality, 0.0000 skewness) — ruling out a mesh-topology explanation at the new location.
+5. Spatial/temporal tracking showed the relocated low-pressure/low-density region developed coherently and propagated from the sharp base corner outward through the wake, not as an isolated or erratic numerical artifact.
+6. Throughout the observed collapse (p: 366.5→0.46 Pa, rho: 1.56e-3→4.54e-6 kg/m³ over 19 snapshots), the ideal-gas-law residual (|p-rhoRT|/p) remained essentially constant at 0.035-0.036% — p, rho, and T stayed mutually consistent to <4 parts in 10,000 throughout, indicating numerically well-behaved (not corrupted) field evolution.
+7. A gradient-length-local Knudsen number check (Boyd et al. criterion, using Sutherland-law viscosity already specified in this case's thermophysicalProperties) showed 100% of cells in the rarefied region (rho<1% rho_inf) exceeded both standard continuum-breakdown thresholds (Kn>0.05, Kn>0.1) at every checked timestep, with Kn values ranging 3.8 to 422 -- two to four orders of magnitude past the breakdown threshold, deep into the free-molecular flow regime.
+8. **Conclusion: the calorically-perfect-gas, continuum Navier-Stokes model cannot be treated as physically valid in this rarefied base/wake region under these freestream conditions**, independent of mesh quality, numerical scheme, or timestep control (all three were tested via controlled single-variable experiments and found to delay/relocate but not resolve the instability -- consistent with a model-validity limitation rather than a numerics defect).
+9. Artificial pressure/density bounding (fvConstraints) was explicitly considered and rejected as the next step: it would suppress the numerical symptom of an already-identified and now-understood physical modeling limitation, rather than resolving or honestly documenting it. This would compromise research integrity by masking a genuine, scientifically meaningful finding.
+10. A rarefied-gas or continuum-DSMC hybrid treatment, which would be required to physically resolve this region, is explicitly out of scope for Project 01 (locked in from project inception as perfect-gas, continuum CFD) and is noted as candidate scope for a future, separate project in the 12-project research program.
+
+### Scope of this limitation
+
+**This limitation is spatially localized to the base/wake rarefaction region near the cone/base corner and downstream.** It does NOT invalidate the CFD solution in the forebody region (nose, cone flank, shock layer upstream of the corner), where flow conditions remain within the continuum regime throughout the investigated time window. The full CFD solution should not be characterized as invalid; rather, its region of physical validity is now understood and documented, and Project 01's quantities of interest are being redefined accordingly (see below).
+
+### Provisional Project 01 quantities of interest (QoI)
+
+**PRIMARY (proceeding with validation):**
+- Stagnation-point wall heat flux
+- Shock stand-off distance
+- Forebody surface pressure distribution
+
+**NOT YET VALIDATED:**
+- Total drag — explicitly deferred pending assessment of how strongly the unresolved base pressure contributes to total axial force. Given the base region is now confirmed outside the model's valid domain, base pressure's contribution to drag cannot currently be trusted; this must be quantified (or the base contribution separately bounded/excluded) before drag can be treated as a valid QoI.
+
+### Status
+
+Corner/base investigation concluded with a specific, evidence-based modeling-domain limitation identified and documented, rather than an unresolved "known limitation, cause unknown." Proceeding to a temporal-independence study of the primary forebody QoIs, to determine whether they stabilize before the base rarefaction becomes significant, prior to beginning grid convergence.

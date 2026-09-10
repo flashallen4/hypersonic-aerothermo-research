@@ -144,3 +144,20 @@ The corner instability is most likely driven by genuine, severe local flow physi
 
 ### Status
 Baseline mesh remains the adopted short-domain Case 4 configuration (fan-point fix NOT yet promoted to the primary baseline — remains an experimental variant, `openfoam/baseline_case_shortdomain_fanpoint_test/`). Grid convergence work is deferred pending either (a) further investigation into achieving genuine quasi-steady behavior before failure, or (b) an explicit decision to proceed with validation using only quantities that stabilize well before the failure point, if any do.
+
+---
+
+## UPDATE — 2026-09-08 (cont.): Corner/Base Investigation Concluded — Modeling-Domain Limitation
+
+### Summary
+The cone/base corner instability investigation is concluded. Root cause: a portion of the base/wake region reaches local Knudsen numbers far beyond continuum-breakdown thresholds (Kn up to ~400, vs. the standard 0.05-0.1 breakdown criterion), meaning the perfect-gas continuum Navier-Stokes model is not physically valid there -- independent of mesh, scheme, or timestep, all of which were tested and ruled out as the primary cause. This is a spatially LOCALIZED modeling-domain limitation, not a defect invalidating the full solution. Full technical detail in CASE_SPECIFICATION.md.
+
+### Decision: Path 3A adopted
+Project 01 proceeds within its original locked-in scope (perfect-gas, continuum CFD). The base/wake rarefaction is documented as an out-of-scope region for this project. A rarefied/DSMC or hybrid treatment, which would be needed to resolve it, is noted as candidate scope for a future, separate project -- not a Project 01 modification.
+
+### Revised QoIs
+Primary (proceeding to validation): stagnation-point heat flux, shock stand-off distance, forebody pressure distribution.
+Deferred: total drag, pending quantification of base-pressure contribution to axial force.
+
+### Status
+Proceeding to temporal-independence study of forebody QoIs (using existing fan-point run data) before beginning grid convergence.
